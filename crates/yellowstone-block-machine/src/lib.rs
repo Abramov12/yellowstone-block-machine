@@ -42,16 +42,14 @@
 //! - `BlockStreamEvent::FrozenBlock`,
 //! - `BlockStreamEvent::SlotCommitmentUpdate`,
 //! - `BlockStreamEvent::ForkDetected`,
-//! - `BlockStreamEvent::DeadBlockDetected`.
+//! - `BlockStreamEvent::DeadBlockDetected`,
+//! - `BlockStreamEvent::BankDiscarded`.
 //!
 //! High-level example:
 //!
 //! ```no_run
 //! use futures_util::StreamExt;
-//! use yellowstone_block_machine::{
-//!     dragonsmouth::client_ext::{BlockStreamEvent, GeyserGrpcExt},
-//!     stream::BlockEventStore,
-//! };
+//! use yellowstone_block_machine::dragonsmouth::client_ext::{BlockStreamEvent, GeyserGrpcExt};
 //! use yellowstone_grpc_client::GeyserGrpcBuilder;
 //! use yellowstone_grpc_proto::geyser::{CommitmentLevel, SubscribeRequest};
 //!
@@ -67,9 +65,7 @@
 //!             BlockStreamEvent::FrozenBlock(block) => {
 //!                 let _ = (
 //!                     block.slot(),
-//!                     block.transaction_len(),
-//!                     block.account_len(),
-//!                     block.entry_len(),
+//!                     block.bank_id(),
 //!                     block.entry_count(),
 //!                     block.parent_slot(),
 //!                     block.parent_blockhash(),
@@ -85,6 +81,9 @@
 //!             BlockStreamEvent::DeadBlockDetected(dead) => {
 //!                 let _ = dead.slot;
 //!             }
+//!             BlockStreamEvent::BankDiscarded(discarded) => {
+//!                 let _ = (discarded.slot, discarded.bank_id);
+//!             }
 //!         }
 //!     }
 //! }
@@ -97,9 +96,16 @@
 //!   Not required if you implement [`event::GeyserEventAdapter`] yourself.
 //! - `dragonsmouth`: Enables `client_ext` helpers on top of `dragonsmouth-thin`, including
 //!   `GeyserGrpcExt::subscribe_block`, and re-exports `yellowstone_grpc_client`.
+//! - `test-tools`: Enables [`dragonsmouth::simulation`], a mock `SubscribeUpdate` stream for
+//!   testing consumers of this crate against pre-programmed slot/bank scenarios without a live
+//!   validator or gRPC connection. Implies `dragonsmouth-thin`.
 //!
 //! If you are integrating with Yellowstone gRPC directly, `dragonsmouth` is the easiest starting point.
-#[cfg(any(feature = "dragonsmouth", feature = "dragonsmouth-thin"))]
+#[cfg(any(
+    feature = "dragonsmouth",
+    feature = "dragonsmouth-thin",
+    feature = "test-tools"
+))]
 pub mod dragonsmouth;
 pub mod event;
 pub mod forks;
